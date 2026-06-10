@@ -28,16 +28,17 @@ echo "📜 Executing relational schema initialization (setup_bq_tables.sql)..."
 bq query --use_legacy_sql=false < setup_bq_tables.sql
 
 # 4. Verify/Import Security Taxonomy and Policy Tags
-echo "🔐 Verifying 'LostCargoSecurity' taxonomy..."
-TAXONOMY_ID=$(gcloud data-catalog taxonomies list --location="${LOCATION}" --filter="display_name=LostCargoSecurity" --format="value(name)" | head -n 1 | xargs)
+TAXONOMY_DISPLAY_NAME="LostCargoSecurity_${PROJECT_ID}"
+echo "🔐 Verifying '${TAXONOMY_DISPLAY_NAME}' taxonomy..."
+TAXONOMY_ID=$(gcloud data-catalog taxonomies list --location="${LOCATION}" --filter="display_name=${TAXONOMY_DISPLAY_NAME}" --format="value(name)" | head -n 1 | xargs)
 
 if [ -z "$TAXONOMY_ID" ]; then
-  echo "🌱 Importing missing 'LostCargoSecurity' taxonomy..."
+  echo "🌱 Importing missing '${TAXONOMY_DISPLAY_NAME}' taxonomy..."
   cat <<EOF > /tmp/taxonomy_import.json
 {
   "taxonomies": [
     {
-      "displayName": "LostCargoSecurity",
+      "displayName": "${TAXONOMY_DISPLAY_NAME}",
       "description": "Taxonomy for lost cargo classification",
       "activatedPolicyTypes": ["FINE_GRAINED_ACCESS_CONTROL"],
       "policyTags": [
@@ -52,11 +53,11 @@ if [ -z "$TAXONOMY_ID" ]; then
 EOF
   gcloud data-catalog taxonomies import /tmp/taxonomy_import.json --location="${LOCATION}" || echo "⚠️ Warning: Import failed (likely already exists). Proceeding..."
   rm -f /tmp/taxonomy_import.json
-  TAXONOMY_ID=$(gcloud data-catalog taxonomies list --location="${LOCATION}" --filter="display_name=LostCargoSecurity" --format="value(name)" | head -n 1 | xargs)
+  TAXONOMY_ID=$(gcloud data-catalog taxonomies list --location="${LOCATION}" --filter="display_name=${TAXONOMY_DISPLAY_NAME}" --format="value(name)" | head -n 1 | xargs)
 fi
 
 if [ -z "$TAXONOMY_ID" ]; then
-  echo "❌ Error: Failed to find or import 'LostCargoSecurity' taxonomy."
+  echo "❌ Error: Failed to find or import '${TAXONOMY_DISPLAY_NAME}' taxonomy."
   exit 1
 fi
 
